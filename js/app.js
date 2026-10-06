@@ -551,6 +551,35 @@ function matchFile(reqId, fileId) {
   renderBlockingIssues();
 }
 
+function handleDateInput(reqId, date) {
+  setExpiryDate(reqId, date);
+}
+
+function handleDateChange(reqId, date) {
+  setExpiryDate(reqId, date);
+}
+
+function quickSetDate(reqId, type) {
+  let newDate = "";
+  if (type === "deadline") {
+    newDate = (state.tender && state.tender.submission_deadline) || "";
+  } else if (type === "year") {
+    const baseStr = (state.tender && state.tender.submission_deadline) || "";
+    const base = baseStr ? new Date(baseStr + "T00:00:00") : new Date();
+    base.setFullYear(base.getFullYear() + 1);
+    newDate = base.toISOString().split("T")[0];
+  } else if (type === "clear") {
+    newDate = "";
+  }
+
+  const input = document.getElementById(`expiry-input-${reqId}`);
+  if (input) {
+    input.value = newDate;
+  }
+
+  setExpiryDate(reqId, newDate);
+}
+
 function setExpiryDate(reqId, date) {
   if (date) {
     state.expiryDates[reqId] = date;
@@ -560,8 +589,70 @@ function setExpiryDate(reqId, date) {
 
   state.packageBlob = null;
 
-  renderRequirements();
+  // In-place UI update so datepicker doesn't lose focus or close native calendar
+  updateCardStateInPlace(reqId);
+  renderSummaryBar();
   renderBlockingIssues();
+}
+
+function updateCardStateInPlace(reqId) {
+  const req = state.requirements.find((r) => r.id === reqId);
+  if (!req) return;
+  const card = document.getElementById(`req-card-${reqId}`);
+  if (!card) return;
+
+  const status = getDocumentStatus(req);
+  const cardStateClass =
+    status === "ok"
+      ? "req-matched"
+      : status === "missing"
+      ? "req-missing"
+      : status === "expired"
+      ? "req-expired"
+      : status === "expiry_needed"
+      ? "req-expiry-needed"
+      : "";
+
+  // Update card styling
+  card.className = `req-card ${cardStateClass}`;
+
+  // Update footer status badge
+  const footerBadge = card.querySelector(".status-badge");
+  if (footerBadge) {
+    footerBadge.className = `status-badge ${getStatusClass(status)}`;
+    footerBadge.innerHTML = `${getStatusIcon(status)} ${getStatusLabel(status)}`;
+  }
+
+  // Update date hint
+  const hintEl = document.getElementById(`date-hint-${reqId}`);
+  if (hintEl) {
+    const expiry = state.expiryDates[reqId];
+    if (!expiry) {
+      hintEl.innerHTML = `<span class="date-hint needed">⏳ ${t("statusExpiryNeeded")}</span>`;
+    } else if (status === "expired") {
+      hintEl.innerHTML = `<span class="date-hint expired">⚠️ ${t("statusExpired")}</span>`;
+    } else {
+      hintEl.innerHTML = `<span class="date-hint ok">✅ ${t("statusOk")}</span>`;
+    }
+  }
+
+  // Update clear button visibility
+  const shortcuts = card.querySelector(".date-shortcuts");
+  if (shortcuts) {
+    const existingClear = shortcuts.querySelector(".btn-date-shortcut.clear");
+    const expiry = state.expiryDates[reqId];
+    if (expiry && !existingClear) {
+      const clearBtn = document.createElement("button");
+      clearBtn.type = "button";
+      clearBtn.className = "btn-date-shortcut clear";
+      clearBtn.onclick = () => quickSetDate(reqId, "clear");
+      clearBtn.title = "Clear date";
+      clearBtn.innerHTML = `✕ ${t("clear")}`;
+      shortcuts.appendChild(clearBtn);
+    } else if (!expiry && existingClear) {
+      shortcuts.removeChild(existingClear);
+    }
+  }
 }
 
 // ══════════════════════════════════════════
@@ -684,13 +775,39 @@ function renderRequirements() {
       let expiryField = "";
       if (req.has_expiry && matchedFileId) {
         const expiryValue = state.expiryDates[req.id] || "";
+        let hintHtml = "";
+        if (!expiryValue) {
+          hintHtml = `<span class="date-hint needed">⏳ ${t("statusExpiryNeeded")}</span>`;
+        } else if (status === "expired") {
+          hintHtml = `<span class="date-hint expired">⚠️ ${t("statusExpired")}</span>`;
+        } else {
+          hintHtml = `<span class="date-hint ok">✅ ${t("statusOk")}</span>`;
+        }
+
         expiryField = `
-          <div class="req-field">
-            <label>${t("colExpiry")}</label>
-            <input type="date" 
-                   value="${expiryValue}" 
-                   onchange="setExpiryDate('${req.id}', this.value)" 
-                   placeholder="${t("enterExpiry")}" />
+          <div class="req-field expiry-field">
+            <label>
+              <span>📅 ${t("colExpiry")}</span>
+              <span id="date-hint-${req.id}">${hintHtml}</span>
+            </label>
+            <div class="date-input-wrap">
+              <input type="date" 
+                     id="expiry-input-${req.id}"
+                     class="date-input"
+                     value="${expiryValue}" 
+                     oninput="handleDateInput('${req.id}', this.value)" 
+                     onchange="handleDateChange('${req.id}', this.value)" 
+                     placeholder="${t("enterExpiry")}" />
+            </div>
+            <div class="date-shortcuts">
+              <button type="button" class="btn-date-shortcut" onclick="quickSetDate('${req.id}', 'deadline')" title="Set to Deadline">
+                ⚡ ${t("shortcutDeadline")}
+              </button>
+              <button type="button" class="btn-date-shortcut" onclick="quickSetDate('${req.id}', 'year')" title="+1 Year">
+                ${t("shortcutYear")}
+              </button>
+              ${expiryValue ? `<button type="button" class="btn-date-shortcut clear" onclick="quickSetDate('${req.id}', 'clear')" title="Clear date">✕ ${t("clear")}</button>` : ""}
+            </div>
           </div>
         `;
       }
@@ -710,7 +827,7 @@ function renderRequirements() {
           </div>
           <div class="req-card-body ${!req.has_expiry || !matchedFileId ? "no-expiry" : ""}">
             <div class="req-field">
-              <label>${t("colMatchedFile")}</label>
+              <label><span>📎 ${t("colMatchedFile")}</span></label>
               <select onchange="matchFile('${req.id}', this.value)">
                 <option value="">${t("selectFile")}</option>
                 ${selectOptions}
@@ -811,9 +928,12 @@ function renderBlockingIssues() {
     generateBtn.disabled = true;
   }
 
-  // Hide download button if package is invalidated
+  // Hide download and preview buttons if package is invalidated
   if (!state.packageBlob) {
-    document.getElementById("download-btn").classList.add("hidden");
+    const dBtn = document.getElementById("download-btn");
+    const pBtn = document.getElementById("preview-btn");
+    if (dBtn) dBtn.classList.add("hidden");
+    if (pBtn) pBtn.classList.add("hidden");
   }
 }
 
@@ -825,15 +945,18 @@ async function handleGeneratePackage() {
   const generateBtn = document.getElementById("generate-btn");
   const progress = document.getElementById("generate-progress");
   const downloadBtn = document.getElementById("download-btn");
+  const previewBtn = document.getElementById("preview-btn");
 
   generateBtn.disabled = true;
   progress.classList.remove("hidden");
-  downloadBtn.classList.add("hidden");
+  if (downloadBtn) downloadBtn.classList.add("hidden");
+  if (previewBtn) previewBtn.classList.add("hidden");
 
   try {
     await generatePackagePDF();
     showToast(t("generated"), "success");
-    downloadBtn.classList.remove("hidden");
+    if (downloadBtn) downloadBtn.classList.remove("hidden");
+    if (previewBtn) previewBtn.classList.remove("hidden");
   } catch (err) {
     console.error("Package generation error:", err);
     showToast("Error generating package: " + err.message, "error");
@@ -954,7 +1077,6 @@ async function generatePackagePDF() {
     yPos -= 20;
 
     if (yPos < 80) {
-      // Shouldn't happen with 10 docs, but just in case
       break;
     }
   }
@@ -966,7 +1088,7 @@ async function generatePackagePDF() {
     if (!file) continue;
 
     try {
-      const srcDoc = await PDFDocument.load(file.arrayBuffer);
+      const srcDoc = await PDFDocument.load(file.arrayBuffer.slice(0));
       const pageIndices = srcDoc.getPageIndices();
       const copiedPages = await pdfDoc.copyPages(srcDoc, pageIndices);
       for (const page of copiedPages) {
@@ -1018,19 +1140,49 @@ async function generatePackagePDF() {
 
   // ─── 4. SAVE ───
   const pdfBytes = await pdfDoc.save();
-  state.packageBlob = new Blob([pdfBytes], { type: "application/pdf" });
+  // Safe ArrayBuffer copy to prevent detach or truncation
+  state.packageBlob = new Blob(
+    [pdfBytes.buffer.slice(pdfBytes.byteOffset, pdfBytes.byteOffset + pdfBytes.byteLength)],
+    { type: "application/pdf" }
+  );
+}
+
+function previewPackage() {
+  if (!state.packageBlob) {
+    showToast("Please generate the package first.", "warning");
+    return;
+  }
+  const url = URL.createObjectURL(state.packageBlob);
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
 
 function downloadPackage() {
-  if (!state.packageBlob) return;
-  const url = URL.createObjectURL(state.packageBlob);
+  if (!state.packageBlob) {
+    showToast("No package generated yet. Please click Generate first.", "warning");
+    return;
+  }
+  const tenderId = (state.tender && state.tender.tender_id) ? state.tender.tender_id.trim() : "Tender";
+  const filename = `${tenderId}_Package.pdf`;
+
+  const blob = state.packageBlob;
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+  a.style.display = "none";
   a.href = url;
-  a.download = `${state.tender.tender_id}_Package.pdf`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  showToast(t("downloadStarted") || "Downloading package PDF...", "info");
+
+  // Keep object URL alive for 60 seconds to allow the browser's download manager
+  // to complete streaming the file to disk without cutting off or corrupting it.
+  setTimeout(() => {
+    if (a.parentNode) {
+      document.body.removeChild(a);
+    }
+    URL.revokeObjectURL(url);
+  }, 60000);
 }
 
 // ══════════════════════════════════════════

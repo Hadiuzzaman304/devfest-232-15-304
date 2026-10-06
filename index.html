@@ -193,14 +193,24 @@
                 <div class="spinner"></div>
                 <span data-i18n="generating">Generating package...</span>
               </div>
-              <button
-                class="btn-download hidden"
-                id="download-btn"
-                onclick="downloadPackage()"
-              >
-                <span>⬇️</span>
-                <span data-i18n="downloadBtn">Download Package</span>
-              </button>
+              <div class="generate-btn-group">
+                <button
+                  class="btn-preview hidden"
+                  id="preview-btn"
+                  onclick="previewPackage()"
+                >
+                  <span>👁️</span>
+                  <span data-i18n="previewBtn">Preview Package</span>
+                </button>
+                <button
+                  class="btn-download hidden"
+                  id="download-btn"
+                  onclick="downloadPackage()"
+                >
+                  <span>⬇️</span>
+                  <span data-i18n="downloadBtn">Download Package</span>
+                </button>
+              </div>
             </div>
           </div>
         </section>

@@ -82,10 +82,14 @@
   --border-radius-xs: 6px;
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --font-family: "Inter", "Noto Sans Bengali", system-ui, sans-serif;
+  color-scheme: light;
+  --calendar-picker-filter: none;
 }
 
 /* ── Dark mode ── */
 [data-theme="dark"] {
+  color-scheme: dark;
+  --calendar-picker-filter: invert(0.9);
   --bg-primary: #0a0b14;
   --bg-secondary: #12131f;
   --bg-tertiary: #181a28;
@@ -828,24 +832,30 @@ body::before {
 }
 
 .req-card-body {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.req-card-body.no-expiry {
-  grid-template-columns: 1fr;
+@media (min-width: 680px) {
+  .req-card-body:not(.no-expiry) {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 14px;
+    align-items: start;
+  }
 }
 
 .req-field label {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .req-field select,
@@ -853,13 +863,13 @@ body::before {
   width: 100%;
   padding: 9px 12px;
   background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  border: 1.5px solid var(--input-border);
   border-radius: 8px;
   color: var(--input-text);
   font-family: var(--font-family);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 500;
   transition: all var(--transition);
-  appearance: auto;
 }
 
 .req-field select:focus,
@@ -868,6 +878,97 @@ body::before {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
+
+/* Polished Date Picker Elements */
+.date-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: var(--calendar-picker-filter, none);
+  opacity: 0.85;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: rgba(108, 99, 255, 0.15);
+  transform: scale(1.1);
+}
+
+.date-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+}
+
+.date-hint.needed {
+  background: var(--status-expiry-needed-bg);
+  color: var(--status-expiry-needed);
+}
+
+.date-hint.expired {
+  background: var(--status-expired-bg);
+  color: var(--status-expired);
+}
+
+.date-hint.ok {
+  background: var(--status-ok-bg);
+  color: var(--status-ok);
+}
+
+.date-shortcuts {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.btn-date-shortcut {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+}
+
+.btn-date-shortcut:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.btn-date-shortcut.clear {
+  color: var(--status-missing);
+  border-color: var(--status-missing-bg);
+  background: var(--status-missing-bg);
+}
+
+.btn-date-shortcut.clear:hover {
+  background: var(--status-missing);
+  color: #fff;
+}
+
 
 /* Status badge */
 .status-badge {
@@ -1033,6 +1134,37 @@ body::before {
 .btn-generate {
   padding: 16px 40px;
   font-size: 1.05rem;
+}
+
+.generate-btn-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 12px;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-preview:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .btn-download {
