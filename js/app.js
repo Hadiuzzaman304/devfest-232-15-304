@@ -138,6 +138,7 @@ function loadRequirementsFromFile(file) {
       // Show sections
       document.getElementById("load-section").classList.add("hidden");
       document.getElementById("tender-info-section").classList.remove("hidden");
+      document.getElementById("bonus-toolbar").classList.remove("hidden");
       document.getElementById("workspace").classList.remove("hidden");
       document.getElementById("generate-section").classList.remove("hidden");
 
@@ -1081,7 +1082,60 @@ async function generatePackagePDF() {
     }
   }
 
-  // ─── 2. ADD DOCUMENT PAGES ───
+  // ─── 2. INDEX / TABLE OF CONTENTS PAGE ───
+  // Calculate starting page for each doc (Cover=1, Index=2, docs start at 3)
+  const indexPage = pdfDoc.addPage([595.28, 841.89]);
+  const { width: ixW, height: ixH } = indexPage.getSize();
+  let iy = ixH - 60;
+
+  const tocTitle = "TABLE OF CONTENTS";
+  const tocTitleWidth = fontBold.widthOfTextAtSize(tocTitle, 18);
+  indexPage.drawText(tocTitle, {
+    x: (ixW - tocTitleWidth) / 2,
+    y: iy,
+    size: 18,
+    font: fontBold,
+    color: rgb(0.1, 0.1, 0.2),
+  });
+  iy -= 10;
+  indexPage.drawLine({
+    start: { x: 72, y: iy },
+    end: { x: ixW - 72, y: iy },
+    thickness: 1.5,
+    color: rgb(0.42, 0.39, 1),
+  });
+  iy -= 30;
+
+  // Table header
+  indexPage.drawText("#", { x: 72, y: iy, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.4) });
+  indexPage.drawText("Document", { x: 100, y: iy, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.4) });
+  indexPage.drawText("Page", { x: ixW - 120, y: iy, size: 10, font: fontBold, color: rgb(0.3, 0.3, 0.4) });
+  iy -= 6;
+  indexPage.drawLine({
+    start: { x: 72, y: iy },
+    end: { x: ixW - 72, y: iy },
+    thickness: 0.5,
+    color: rgb(0.7, 0.7, 0.8),
+  });
+  iy -= 18;
+
+  let currentDocPage = 3; // page 1=cover, page 2=index, documents start at 3
+  for (let i = 0; i < includedDocs.length; i++) {
+    const doc = includedDocs[i];
+    const fileId = state.matches[doc.id];
+    const file = state.uploadedFiles.find((f) => f.id === fileId);
+    const pages = file ? file.pageCount : 0;
+
+    indexPage.drawText(`${doc.order}.`, { x: 72, y: iy, size: 10, font: font, color: rgb(0.2, 0.2, 0.3) });
+    indexPage.drawText(doc.title_en, { x: 100, y: iy, size: 10, font: font, color: rgb(0.2, 0.2, 0.3) });
+    indexPage.drawText(`${currentDocPage}`, { x: ixW - 110, y: iy, size: 10, font: font, color: rgb(0.42, 0.39, 1) });
+
+    currentDocPage += pages;
+    iy -= 22;
+    if (iy < 60) break;
+  }
+
+  // ─── 3. ADD DOCUMENT PAGES ───
   for (const req of includedDocs) {
     const fileId = state.matches[req.id];
     const file = state.uploadedFiles.find((f) => f.id === fileId);
@@ -1100,7 +1154,7 @@ async function generatePackagePDF() {
     }
   }
 
-  // ─── 3. ADD FOOTERS TO ALL PAGES ───
+  // ─── 4. ADD FOOTERS TO ALL PAGES ───
   const totalPages = pdfDoc.getPageCount();
   const allPages = pdfDoc.getPages();
 
@@ -1138,7 +1192,7 @@ async function generatePackagePDF() {
     });
   }
 
-  // ─── 4. SAVE ───
+  // ─── 5. SAVE ───
   const pdfBytes = await pdfDoc.save();
   // Safe ArrayBuffer copy to prevent detach or truncation
   state.packageBlob = new Blob(
@@ -1224,5 +1278,230 @@ function formatDate(dateStr) {
     );
   } catch {
     return dateStr;
+  }
+}
+
+// ══════════════════════════════════════════
+// BONUS: AUTO-MATCH FILES TO REQUIREMENTS
+// ══════════════════════════════════════════
+
+function autoMatchFiles() {
+  if (!state.requirements.length || !state.uploadedFiles.length) {
+    showToast(t("autoMatchNone"), "warning");
+    return;
+  }
+
+  // Keyword mapping: requirement title_en keywords -> file name patterns
+  const keywordMap = {
+    "trade license": ["trade_license", "trade-license", "tradelicense"],
+    "tin certificate": ["tin_certificate", "tin-certificate", "tin_cert", "tin"],
+    "vat registration": ["vat_certificate", "vat-certificate", "vat_reg", "vat"],
+    "bank solvency": ["bank_solvency", "bank-solvency", "solvency"],
+    "experience certificate": ["experience_cert", "experience-cert", "experience"],
+    "audited financial": ["audited_financial", "financial_statement", "audited"],
+    "manufacturer": ["manufacturer", "authorization"],
+    "technical proposal": ["technical_proposal", "technical-proposal", "technical"],
+    "financial proposal": ["financial_proposal", "financial-proposal", "01_financial"],
+    "signed declaration": ["signed_declaration", "declaration"],
+  };
+
+  const matchedFileIds = new Set(Object.values(state.matches));
+  const matchedHashes = new Set();
+  for (const reqId in state.matches) {
+    const f = state.uploadedFiles.find((x) => x.id === state.matches[reqId]);
+    if (f && f.isDuplicate) matchedHashes.add(f.hash);
+  }
+
+  let matchCount = 0;
+
+  for (const req of state.requirements) {
+    // Skip already matched
+    if (state.matches[req.id]) continue;
+
+    const titleLower = req.title_en.toLowerCase();
+
+    // Find keywords that match this requirement title
+    let patterns = [];
+    for (const [keyword, pats] of Object.entries(keywordMap)) {
+      if (titleLower.includes(keyword.split(" ")[0])) {
+        patterns = patterns.concat(pats);
+      }
+    }
+
+    if (patterns.length === 0) continue;
+
+    // Find best matching unmatched file
+    let bestFile = null;
+    let bestScore = 0;
+
+    for (const file of state.uploadedFiles) {
+      if (matchedFileIds.has(file.id)) continue;
+      if (file.isDuplicate && matchedHashes.has(file.hash)) continue;
+
+      const nameLower = file.name.toLowerCase().replace(/\.pdf$/i, "");
+
+      for (const pattern of patterns) {
+        if (nameLower.includes(pattern)) {
+          // Prefer longer pattern matches (more specific)
+          const score = pattern.length;
+          if (score > bestScore) {
+            bestScore = score;
+            bestFile = file;
+          }
+        }
+      }
+    }
+
+    if (bestFile) {
+      state.matches[req.id] = bestFile.id;
+      matchedFileIds.add(bestFile.id);
+      if (bestFile.isDuplicate) matchedHashes.add(bestFile.hash);
+      matchCount++;
+    }
+  }
+
+  state.packageBlob = null;
+
+  renderFileList();
+  renderUploadStats();
+  renderRequirements();
+  renderBlockingIssues();
+
+  if (matchCount > 0) {
+    showToast(t("autoMatchSuccess").replace("{count}", matchCount), "success");
+  } else {
+    showToast(t("autoMatchNone"), "info");
+  }
+}
+
+// ══════════════════════════════════════════
+// BONUS: EXPORT CHECKLIST AS CSV
+// ══════════════════════════════════════════
+
+function exportChecklist() {
+  if (!state.requirements.length) {
+    showToast("No requirements loaded.", "warning");
+    return;
+  }
+
+  const headers = ["Order", "Document", "Type", "Matched File", "Pages", "Expiry Date", "Status"];
+  const rows = state.requirements.map((req) => {
+    const status = getDocumentStatus(req);
+    const matchedFileId = state.matches[req.id];
+    const matchedFile = matchedFileId
+      ? state.uploadedFiles.find((f) => f.id === matchedFileId)
+      : null;
+    const expiry = state.expiryDates[req.id] || "";
+
+    return [
+      req.order,
+      `"${req.title_en}"`,
+      req.mandatory ? "Required" : "Optional",
+      matchedFile ? `"${matchedFile.name}"` : "",
+      matchedFile ? matchedFile.pageCount : "",
+      expiry,
+      getStatusLabel(status),
+    ].join(",");
+  });
+
+  const csvContent = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const tenderId = (state.tender && state.tender.tender_id) ? state.tender.tender_id : "Tender";
+  a.download = `${tenderId}_Checklist.csv`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    if (a.parentNode) document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 5000);
+
+  showToast(t("exportCsvSuccess"), "success");
+}
+
+// ══════════════════════════════════════════
+// BONUS: SAVE / LOAD SESSION
+// ══════════════════════════════════════════
+
+function saveSession() {
+  if (!state.tender) {
+    showToast("No tender loaded to save.", "warning");
+    return;
+  }
+
+  const sessionData = {
+    tender: state.tender,
+    requirements: state.requirements,
+    matches: state.matches,
+    expiryDates: state.expiryDates,
+    // Save file metadata (not raw bytes — those can't be serialized)
+    filesMeta: state.uploadedFiles.map((f) => ({
+      id: f.id,
+      name: f.name,
+      pageCount: f.pageCount,
+      hash: f.hash,
+      isDuplicate: f.isDuplicate,
+      duplicateOf: f.duplicateOf,
+    })),
+  };
+
+  try {
+    localStorage.setItem("tpb-session", JSON.stringify(sessionData));
+    showToast(t("saveSessionSuccess"), "success");
+  } catch (e) {
+    console.error("Save session failed:", e);
+    showToast("Failed to save session: " + e.message, "error");
+  }
+}
+
+function loadSession() {
+  const raw = localStorage.getItem("tpb-session");
+  if (!raw) {
+    showToast(t("loadSessionNone"), "warning");
+    return;
+  }
+
+  try {
+    const data = JSON.parse(raw);
+    if (!data.tender || !data.requirements) {
+      showToast("Saved session data is invalid.", "error");
+      return;
+    }
+
+    state.tender = data.tender;
+    state.requirements = data.requirements;
+    state.expiryDates = data.expiryDates || {};
+    state.packageBlob = null;
+
+    // Restore matches only for files that are still uploaded
+    const currentFileIds = new Set(state.uploadedFiles.map((f) => f.id));
+    state.matches = {};
+    if (data.matches) {
+      for (const [reqId, fileId] of Object.entries(data.matches)) {
+        if (currentFileIds.has(fileId)) {
+          state.matches[reqId] = fileId;
+        }
+      }
+    }
+
+    // Show sections
+    document.getElementById("load-section").classList.add("hidden");
+    document.getElementById("tender-info-section").classList.remove("hidden");
+    document.getElementById("bonus-toolbar").classList.remove("hidden");
+    document.getElementById("workspace").classList.remove("hidden");
+    document.getElementById("generate-section").classList.remove("hidden");
+
+    renderTenderInfo();
+    renderFileList();
+    renderUploadStats();
+    renderRequirements();
+    renderBlockingIssues();
+
+    showToast(t("loadSessionSuccess"), "success");
+  } catch (e) {
+    console.error("Load session failed:", e);
+    showToast("Failed to load session: " + e.message, "error");
   }
 }

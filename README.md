@@ -36,9 +36,12 @@ Then visit `http://localhost:3000`
 
 ## ⭐ Bonus Features
 
-- [x] **Handle bad files** — Damaged/password-protected PDFs show clear error messages
-- [x] **Auto-match** — (Suggested) File name matching hints in dropdown
-- [x] **Theme persistence** — Dark/Light mode saved in localStorage
+- [x] **Index / Table of Contents Page** — PDF page 2 lists every included document and its starting page number
+- [x] **Auto-Match** — 🤖 One-click button matches files to requirements based on filename keywords
+- [x] **Export Checklist as CSV** — 📊 Downloads a CSV report with document name, matched file, pages, expiry, status
+- [x] **Save / Load Session** — 💾 Saves tender, matches, and expiry dates to browser localStorage; restores on reload
+- [x] **Handle Bad Files** — Damaged/password-protected PDFs show clear error messages instead of crash
+- [x] **Dark / Light Mode Persistence** — Theme saved in localStorage
 
 ## ⚠️ Known Issues
 

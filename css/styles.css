@@ -1440,3 +1440,50 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .summary-item .summary-dot.dot-expired { background: var(--status-expired); }
 .summary-item .summary-dot.dot-expiry-needed { background: var(--status-expiry-needed); }
 .summary-item .summary-dot.dot-not-provided { background: var(--status-not-provided); }
+
+/* ══════════════════════════════════════════
+   BONUS TOOLBAR
+   ══════════════════════════════════════════ */
+
+.bonus-toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--glass-shadow);
+  animation: fadeSlideIn 0.4s ease forwards;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.toolbar-btn:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+
+.toolbar-btn:active {
+  transform: translateY(0);
+}

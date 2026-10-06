@@ -90,6 +90,26 @@
           </div>
         </section>
 
+        <!-- ──── Bonus Toolbar ──── -->
+        <div class="bonus-toolbar hidden" id="bonus-toolbar">
+          <button class="toolbar-btn" id="auto-match-btn" onclick="autoMatchFiles()" title="Auto Match">
+            <span>🤖</span>
+            <span data-i18n="autoMatchBtn">Auto Match</span>
+          </button>
+          <button class="toolbar-btn" id="export-csv-btn" onclick="exportChecklist()" title="Export CSV">
+            <span>📊</span>
+            <span data-i18n="exportCsvBtn">Export CSV</span>
+          </button>
+          <button class="toolbar-btn" id="save-session-btn" onclick="saveSession()" title="Save Session">
+            <span>💾</span>
+            <span data-i18n="saveSessionBtn">Save Session</span>
+          </button>
+          <button class="toolbar-btn" id="load-session-btn" onclick="loadSession()" title="Load Session">
+            <span>📂</span>
+            <span data-i18n="loadSessionBtn">Load Session</span>
+          </button>
+        </div>
+
         <!-- ──── Workspace (upload + requirements) ──── -->
         <div class="workspace-layout hidden" id="workspace">
           <!-- Upload Section -->

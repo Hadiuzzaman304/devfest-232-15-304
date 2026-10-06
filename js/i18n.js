@@ -107,6 +107,29 @@ const translations = {
     checklist: "Checklist",
     summary: "Summary",
     indexPage: "Index",
+
+    // Bonus — Auto Match
+    autoMatchBtn: "Auto Match",
+    autoMatchSuccess: "Auto-matched {count} file(s) to requirements!",
+    autoMatchNone: "No automatic matches found. Please match files manually.",
+
+    // Bonus — Export CSV
+    exportCsvBtn: "Export CSV",
+    exportCsvSuccess: "Checklist exported as CSV.",
+
+    // Bonus — Save / Load Session
+    saveSessionBtn: "Save Session",
+    loadSessionBtn: "Load Session",
+    saveSessionSuccess: "Session saved to browser storage.",
+    loadSessionSuccess: "Previous session restored!",
+    loadSessionNone: "No saved session found.",
+    clearSessionBtn: "Clear Saved",
+    clearSessionSuccess: "Saved session cleared.",
+
+    // Bonus — Index Page
+    indexPageTitle: "TABLE OF CONTENTS",
+    indexPageDoc: "Document",
+    indexPagePage: "Page",
   },
 
   bn: {
@@ -212,6 +235,29 @@ const translations = {
     checklist: "চেকলিস্ট",
     summary: "সারসংক্ষেপ",
     indexPage: "সূচি",
+
+    // Bonus — Auto Match
+    autoMatchBtn: "স্বয়ংক্রিয় মিল",
+    autoMatchSuccess: "{count} টি ফাইল স্বয়ংক্রিয়ভাবে মিলিত হয়েছে!",
+    autoMatchNone: "কোনো স্বয়ংক্রিয় মিল পাওয়া যায়নি। দয়া করে ম্যানুয়ালি মেলান।",
+
+    // Bonus — Export CSV
+    exportCsvBtn: "CSV রপ্তানি",
+    exportCsvSuccess: "চেকলিস্ট CSV হিসেবে রপ্তানি হয়েছে।",
+
+    // Bonus — Save / Load Session
+    saveSessionBtn: "সেশন সংরক্ষণ",
+    loadSessionBtn: "সেশন লোড",
+    saveSessionSuccess: "সেশন ব্রাউজার স্টোরেজে সংরক্ষিত হয়েছে।",
+    loadSessionSuccess: "পূর্ববর্তী সেশন পুনরুদ্ধার হয়েছে!",
+    loadSessionNone: "কোনো সংরক্ষিত সেশন পাওয়া যায়নি।",
+    clearSessionBtn: "সংরক্ষিত মুছুন",
+    clearSessionSuccess: "সংরক্ষিত সেশন মুছে ফেলা হয়েছে।",
+
+    // Bonus — Index Page
+    indexPageTitle: "সূচিপত্র",
+    indexPageDoc: "নথি",
+    indexPagePage: "পৃষ্ঠা",
   },
 };
 
