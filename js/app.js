@@ -219,10 +219,13 @@ function triggerFileUpload() {
 }
 
 async function handleFileUpload(event) {
-  const files = Array.from(event.target.files);
-  await processUploadedFiles(files);
-  // Reset input so same file can be re-uploaded
-  event.target.value = "";
+  try {
+    const files = Array.from(event.target.files);
+    await processUploadedFiles(files);
+  } finally {
+    // Reset input so same file can be re-uploaded, even if error happens
+    event.target.value = "";
+  }
 }
 
 function setupUploadDragDrop() {
@@ -281,7 +284,8 @@ async function processUploadedFiles(files) {
     // Validate it's actually a PDF by trying to parse it
     let pageCount = 0;
     try {
-      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      // Pass a COPY to pdf.js so it doesn't detach the buffer, which would break crypto.digest
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0) }).promise;
       pageCount = pdfDoc.numPages;
     } catch {
       showToast(`"${file.name}" ${t("damagedPdfError")}`, "error");
@@ -289,7 +293,14 @@ async function processUploadedFiles(files) {
     }
 
     // Compute hash for duplicate detection
-    const hash = await computeHash(arrayBuffer);
+    let hash;
+    try {
+      hash = await computeHash(arrayBuffer);
+    } catch (e) {
+      console.error("Hashing failed:", e);
+      showToast(`"${file.name}" failed hashing.`, "error");
+      continue;
+    }
 
     // Check if already uploaded (exact same file)
     const alreadyExists = state.uploadedFiles.some(
