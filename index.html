@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tender Package Builder</title>
+    <meta
+      name="description"
+      content="Build complete, checked and correctly ordered tender document packages for submission."
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- ═══════════ HEADER ═══════════ -->
+      <header class="app-header" id="app-header">
+        <div class="logo-section">
+          <div class="logo-icon">📋</div>
+          <div class="logo-text">
+            <h1 data-i18n="appTitle">Tender Package Builder</h1>
+            <p data-i18n="appSubtitle">Document Management System</p>
+          </div>
+        </div>
+        <div class="header-controls">
+          <button
+            id="theme-toggle"
+            class="control-btn"
+            title="Toggle Theme"
+            onclick="toggleTheme()"
+          >
+            <span class="btn-icon" id="theme-icon">🌙</span>
+            <span class="btn-label" id="theme-label">Dark</span>
+          </button>
+          <button
+            id="lang-toggle"
+            class="control-btn"
+            title="Switch Language"
+            onclick="toggleLanguage()"
+          >
+            <span class="btn-icon">🌐</span>
+            <span class="btn-label" id="lang-label">EN</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- ═══════════ MAIN ═══════════ -->
+      <main class="main-content">
+        <!-- ──── Load Section ──── -->
+        <section id="load-section" class="section glass-card">
+          <div class="load-illustration">📁</div>
+          <div class="section-header">
+            <h2 data-i18n="loadTitle">Load Tender Requirements</h2>
+            <p data-i18n="loadDesc">
+              Open your <code>requirements.json</code> file to begin building
+              your tender document package.
+            </p>
+          </div>
+          <div class="load-actions">
+            <button
+              class="btn-primary"
+              id="load-btn"
+              onclick="triggerLoadRequirements()"
+            >
+              <span>📂</span>
+              <span data-i18n="loadBtn">Open requirements.json</span>
+            </button>
+            <span class="load-drag-text" data-i18n="loadDragText"
+              >or drag &amp; drop the file here</span
+            >
+          </div>
+          <input
+            type="file"
+            id="requirements-input"
+            accept=".json"
+            style="display: none"
+            onchange="handleRequirementsFile(event)"
+          />
+        </section>
+
+        <!-- ──── Tender Info ──── -->
+        <section id="tender-info-section" class="section glass-card hidden">
+          <div class="section-header">
+            <h2>
+              <span class="section-icon">📋</span>
+              <span data-i18n="tenderInfoTitle">Tender Information</span>
+            </h2>
+          </div>
+          <div class="tender-info-grid" id="tender-info-grid">
+            <!-- Filled dynamically -->
+          </div>
+        </section>
+
+        <!-- ──── Workspace (upload + requirements) ──── -->
+        <div class="workspace-layout hidden" id="workspace">
+          <!-- Upload Section -->
+          <section id="upload-section" class="section glass-card">
+            <div class="section-header">
+              <h2>
+                <span class="section-icon">📤</span>
+                <span data-i18n="uploadTitle">Upload Documents</span>
+              </h2>
+              <p data-i18n="uploadDesc">
+                Upload PDF files to match with tender requirements.
+              </p>
+            </div>
+
+            <div
+              class="upload-zone"
+              id="upload-zone"
+              onclick="triggerFileUpload()"
+            >
+              <div class="upload-icon">⬆️</div>
+              <div class="upload-main-text" data-i18n="uploadDrag">
+                Drag &amp; drop PDF files here
+              </div>
+              <div class="upload-sub-text" data-i18n="uploadOr">or</div>
+              <button class="btn-upload" data-i18n="uploadBtn">
+                Choose PDF Files
+              </button>
+            </div>
+            <input
+              type="file"
+              id="file-upload-input"
+              accept=".pdf"
+              multiple
+              style="display: none"
+              onchange="handleFileUpload(event)"
+            />
+
+            <!-- Upload Stats -->
+            <div class="upload-stats" id="upload-stats"></div>
+
+            <!-- File List -->
+            <div class="file-list" id="file-list">
+              <div class="empty-state" id="file-empty-state">
+                <div class="empty-icon">📄</div>
+                <p data-i18n="noFilesUploaded">No files uploaded yet</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Requirements Section -->
+          <section id="requirements-section" class="section glass-card">
+            <div class="section-header">
+              <h2>
+                <span class="section-icon">✅</span>
+                <span data-i18n="requirementsTitle"
+                  >Document Requirements</span
+                >
+              </h2>
+              <p data-i18n="requirementsDesc">
+                Match uploaded files to each requirement and enter expiry dates
+                where needed.
+              </p>
+            </div>
+
+            <!-- Status Summary Bar -->
+            <div class="summary-bar" id="summary-bar"></div>
+
+            <!-- Requirements List -->
+            <div class="requirements-list" id="requirements-list">
+              <!-- Filled dynamically -->
+            </div>
+          </section>
+        </div>
+
+        <!-- ──── Generate Section ──── -->
+        <section id="generate-section" class="section glass-card hidden">
+          <div class="section-header">
+            <h2>
+              <span class="section-icon">📦</span>
+              <span data-i18n="generateTitle">Generate Package</span>
+            </h2>
+            <p data-i18n="generateDesc">
+              Create the final combined PDF package for submission.
+            </p>
+          </div>
+          <div class="generate-content">
+            <div class="blocking-issues" id="blocking-issues">
+              <!-- Filled dynamically -->
+            </div>
+            <div class="generate-actions" id="generate-actions">
+              <button
+                class="btn-primary btn-generate"
+                id="generate-btn"
+                onclick="handleGeneratePackage()"
+                disabled
+              >
+                <span>📦</span>
+                <span data-i18n="generateBtn">Generate Package PDF</span>
+              </button>
+              <div class="generate-progress hidden" id="generate-progress">
+                <div class="spinner"></div>
+                <span data-i18n="generating">Generating package...</span>
+              </div>
+              <button
+                class="btn-download hidden"
+                id="download-btn"
+                onclick="downloadPackage()"
+              >
+                <span>⬇️</span>
+                <span data-i18n="downloadBtn">Download Package</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Libraries (CDN) -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <!-- App Scripts -->
+    <script src="js/i18n.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
