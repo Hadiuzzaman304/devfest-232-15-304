@@ -417,16 +417,16 @@ function removeFile(fileId) {
 
 function renderFileList() {
   const list = document.getElementById("file-list");
-  const empty = document.getElementById("file-empty-state");
 
   if (state.uploadedFiles.length === 0) {
-    list.innerHTML = "";
-    list.appendChild(empty);
-    empty.classList.remove("hidden");
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <p>${t("noFilesUploaded")}</p>
+      </div>
+    `;
     return;
   }
-
-  empty.classList.add("hidden");
 
   // Check which files are matched
   const matchedFileIds = new Set(Object.values(state.matches));
@@ -457,17 +457,17 @@ function renderFileList() {
       }
 
       return `
-        <div class="file-item ${file.isDuplicate ? "is-duplicate" : ""}" 
+        <div class="file-item ${file.isDuplicate ? "is-duplicate" : ""} ${isMatched ? "is-matched" : ""}" 
              style="animation-delay: ${index * 0.05}s"
              id="file-item-${file.id}">
-          <div class="file-icon">${file.isDuplicate ? "⚠️" : "📄"}</div>
+          <div class="file-icon">${file.isDuplicate ? "⚠️" : isMatched ? "✅" : "📄"}</div>
           <div class="file-info">
             <div class="file-name" title="${file.name}">${file.name}</div>
             <div class="file-meta">${pageLabel}</div>
             <div class="file-tags">${tags}</div>
             ${duplicateWarning}
           </div>
-          <button class="btn-remove" onclick="removeFile('${file.id}')" data-i18n="removeFile">
+          <button class="btn-remove" onclick="removeFile('${file.id}')">
             ${t("removeFile")}
           </button>
         </div>
@@ -695,8 +695,10 @@ function renderRequirements() {
         `;
       }
 
+      const cardStateClass = status === "ok" ? "req-matched" : status === "missing" ? "req-missing" : status === "expired" ? "req-expired" : status === "expiry_needed" ? "req-expiry-needed" : "";
+
       return `
-        <div class="req-card" style="animation-delay: ${index * 0.06}s" id="req-card-${req.id}">
+        <div class="req-card ${cardStateClass}" style="animation-delay: ${index * 0.06}s" id="req-card-${req.id}">
           <div class="req-card-header">
             <div class="req-card-title">
               <div class="req-order">${req.order}</div>

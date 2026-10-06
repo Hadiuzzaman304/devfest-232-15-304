@@ -915,6 +915,39 @@ body::before {
   border-top: 1px solid var(--card-border);
 }
 
+/* Requirement card state styles */
+.req-card.req-matched {
+  border-left: 4px solid var(--status-ok);
+  background: var(--status-ok-bg);
+}
+
+.req-card.req-matched .req-order {
+  background: var(--status-ok-bg);
+  color: var(--status-ok);
+}
+
+.req-card.req-missing {
+  border-left: 4px solid var(--status-missing);
+}
+
+.req-card.req-expired {
+  border-left: 4px solid var(--status-expired);
+}
+
+.req-card.req-expiry-needed {
+  border-left: 4px solid var(--status-expiry-needed);
+}
+
+/* Matched file item */
+.file-item.is-matched {
+  border-color: var(--status-ok);
+  background: var(--status-ok-bg);
+}
+
+.file-item.is-matched .file-icon {
+  background: var(--status-ok-bg);
+}
+
 /* ══════════════════════════════════════════
    GENERATE SECTION
    ══════════════════════════════════════════ */
