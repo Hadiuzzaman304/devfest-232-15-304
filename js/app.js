@@ -247,6 +247,19 @@ function setupUploadDragDrop() {
 
 async function processUploadedFiles(files) {
   for (const file of files) {
+    // Check file count limit (max 30)
+    if (state.uploadedFiles.length >= 30) {
+      showToast("Maximum 30 files allowed.", "warning");
+      break;
+    }
+
+    // Check total size limit (max 50MB)
+    const currentTotalSize = state.uploadedFiles.reduce((sum, f) => sum + f.arrayBuffer.byteLength, 0);
+    if (currentTotalSize + file.size > 50 * 1024 * 1024) {
+      showToast("Total file size exceeds 50 MB limit.", "warning");
+      break;
+    }
+
     // Check if it's a PDF
     if (
       file.type !== "application/pdf" &&
@@ -858,16 +871,23 @@ async function generatePackagePDF() {
 
   yPos -= 50;
 
-  // Tender details
+  // Tender details — ALWAYS English on cover page (Section 6.1)
+  const formatDateEnglish = (dateStr) => {
+    try {
+      const d = new Date(dateStr + "T00:00:00");
+      return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    } catch { return dateStr; }
+  };
+
   const detailLines = [
     ["Tender ID:", td.tender_id],
     ["Title:", td.title],
     ["Procuring Entity:", td.procuring_entity],
     ["Bidder:", td.bidder],
-    ["Submission Deadline:", formatDate(td.submission_deadline)],
+    ["Submission Deadline:", formatDateEnglish(td.submission_deadline)],
     [
       "Package Generated On:",
-      formatDate(new Date().toISOString().split("T")[0]),
+      formatDateEnglish(new Date().toISOString().split("T")[0]),
     ],
   ];
 
